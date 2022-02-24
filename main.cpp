@@ -806,36 +806,37 @@ int opeByResult(vector<OpeLog *> result)
     }
 }
 
-char *searchByStuId(string pattern) {
+string searchByStuId(string pattern) {
     int index;
     char str[256];
     while ((index = pattern.find("?")) != pattern.npos) {
-        pattern.replace(index, 1, "(.{0,1})");
+        pattern.replace(index, 1, "(.{1,1})");
     }
     while ((index = pattern.find("*")) != pattern.npos) {
         pattern.replace(index, 1, "(.{0,})");
     }
     regex patten_re(pattern);
-    auto iter = students.begin();
+    auto iter = students.begin();   //iterator遍历学生寻找与正则表达式匹配的学号
     string out_str;
     while (iter != students.end()) {
-        if (regex_match(str, patten_re)) {
-//            cout <<
+        if (regex_match(to_string(iter->second->studentNum), patten_re)) {
+            out_str.append(to_string(iter->second->studentNum));
+            out_str.append(", ");
         }
         iter++;
     }
-    char *ret_str = (char *) malloc(out_str.length() + 1);
-    out_str.copy(ret_str, out_str.size(), 0);
-    ret_str[out_str.size()] = 0;
-    return ret_str;
+    return out_str;
 }
 
-int outputSearchRes() {
+int fuzzySearch() {
     string input;
     cout << "Input: " << endl;
     cin >> input;
-    searchByStuId(input);
+    string result = searchByStuId(input);
+    cout << result << endl;
 }
+
+int analysis() {}
 
 int main()
 {
@@ -860,5 +861,8 @@ int main()
 //        Student *stu = students.find(stuNum)->second;
 //        printf("%d", stu->rear->balance);
 //    }
+    fuzzySearch();
+
+
     return 0;
 }
