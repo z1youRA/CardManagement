@@ -1,0 +1,8 @@
+main
+.idea/
+CMakeLists.txt
+cmake-build-debug-coverage/
+cmake-build-debug/
+log/
+valgrind.xml
+
