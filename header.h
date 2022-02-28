@@ -79,8 +79,9 @@ typedef struct window
     int logQuantity;
     OpeLog *rear;
 } Window;
+//
 
-struct comp
+struct comp_time
 {
     bool operator()(const struct opelog *a, const struct opelog *b)
     {
@@ -89,3 +90,5 @@ struct comp
 };
 
 #endif //CARDMANAGEMENT_HEADER_H
+
+void outputHome();

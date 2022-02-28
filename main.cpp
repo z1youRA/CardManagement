@@ -8,13 +8,14 @@ OpeLog *logs = NULL;
 int cardSum = 0;
 Window windows[100];
 FILE* logFile = fopen("/home/z1youra/CLionProjects/cardManagement/log/ope_log.txt", "w");
+int importFlag = 0;
 
 //所有学生状态初始化为不存在
 void initStatus()
 {
     for (int i = 0; i < 100; i++)
     {
-        windows[i].index = i + 1;
+        windows[i].index = i;
         windows[i].rear = NULL;
         windows[i].logQuantity = 0;
     }
@@ -434,7 +435,7 @@ int pay(int cardNum, float payAmount)
     Card *card = getCard(cardNum);
     Student *stu = getStudent(card->studentNum);
     int payInt = balanceToInt(payAmount);
-//    if(stu->studentNum == 2020130027) {
+//    if(stu->studentNum == 2020281202) {
 //        saveOpeLogToStu(stu, PAY, OK, payAmount, 0, "imp");
 //    }
     if (stu->status == NORMAL)
@@ -473,7 +474,7 @@ int pay(int cardNum, float payAmount)
 //初始化窗口日志，使日志从指定位置开始存储
 int initWindow(int index, int position)
 {
-    OpeLog *log = initOpeLog(EMPTY, -1, 0, OK, 0, TIMENOW);
+    OpeLog *log = initOpeLog(EMPTY, -1, 0, index, 0, TIMENOW);
     if (windows[index].rear == NULL)
     { // 窗口日志为空， 生成一个初始日志
         windows[index].rear = log;
@@ -482,7 +483,7 @@ int initWindow(int index, int position)
     }
     for (int i = 0; i < position - 2; i++)
     { // 生成position - 2个占位日志
-        OpeLog *log = initOpeLog(EMPTY, -1, 0, OK, 0, TIMENOW);
+        OpeLog *log = initOpeLog(EMPTY, -1, 0, index, 0, TIMENOW);
         log->next = windows[index].rear->next;
         windows[index].rear->next = log;
         windows[index].rear = log;
@@ -492,7 +493,7 @@ int initWindow(int index, int position)
 }
 
 //模拟在窗口出消费，输入窗口序号，卡号，支付金额，时间戳
-int payAtWindow(int index, int cardNum, float payAmount, int time)
+int payAtWindow(int index, int cardNum, float payAmount, long time)
 {
     Card *card = getCard(cardNum);
     if (card == NULL)
@@ -500,8 +501,8 @@ int payAtWindow(int index, int cardNum, float payAmount, int time)
         printf("卡号: %d不存在， 支付失败！\n", cardNum);
         return FAILED;
     }
-    OpeLog *temp = initOpeLog(PAY, getCard(cardNum)->studentNum, cardNum, OK, payAmount, time);
-    if (pay(cardNum, payAmount) == OK)
+    OpeLog *temp = initOpeLog(PAY, getCard(cardNum)->studentNum, cardNum, index, payAmount, time);
+    if (pay(cardNum, payAmount) == OK)  //支付成功， 将日志存入对应窗口的循环链表
     {
         if (windows[index].logQuantity < 60000)
         {
@@ -543,7 +544,7 @@ int importOpenDisInfo()
     if (file == NULL)
     {
         printf("ERROR: 文件路径有误！\n");
-        exit(FAILED);
+        return FAILED;
     }
     char str[30];
     if (fgets(str, 30, file))
@@ -581,7 +582,7 @@ int importPositionInfo()
     if (file == NULL)
     {
         printf("ERROR: 文件路径有误！");
-        exit(1);
+        return FAILED;
     }
     if (fgets(str, 10, file))
     {
@@ -618,7 +619,7 @@ int importOpeInfo()
     if (opeFile == NULL)
     {
         printf("ERROR: 文件路径有误！");
-        exit(1);
+        return FAILED;
     }
 
     if (fgets(opeStr, 50, opeFile))
@@ -665,6 +666,7 @@ int importOpeInfo()
                 windowRec[0].push_back(log);
             }
         }
+        return OK;
     }
     else
     {
@@ -687,7 +689,7 @@ int importPayInfo()
     if (payFile == NULL)
     {
         printf("ERROR: 文件路径有误！");
-        exit(1);
+        return FAILED;
     }
 
     if (fgets(payStr, 50, payFile))
@@ -737,7 +739,7 @@ vector<OpeLog *> mergesort(vector<OpeLog *> *array)
 {
     clock_t start = clock();
     vector<OpeLog *> result;
-    priority_queue<OpeLog *, vector<OpeLog *>, comp> pq;
+    priority_queue<OpeLog *, vector<OpeLog *>, comp_time> pq;
     for (int i = 0; i < 100; i++)
     {
         if (array[i].size() > 0)
@@ -806,15 +808,30 @@ int opeByResult(vector<OpeLog *> result)
     }
 }
 
-string searchByStuId(string pattern) {
+string toRegex(string str) {
     int index;
-    char str[256];
-    while ((index = pattern.find("?")) != pattern.npos) {
-        pattern.replace(index, 1, "(.{1,1})");
+    while ((index = str.find("?")) != str.npos) {
+        str.replace(index, 1, "(.{1,1})");
     }
-    while ((index = pattern.find("*")) != pattern.npos) {
-        pattern.replace(index, 1, "(.{0,})");
+    while ((index = str.find("*")) != str.npos) {
+        str.replace(index, 1, "(.{0,})");
     }
+    return str;
+}
+
+string toRegex_name(string str) {
+    int index;
+    while ((index = str.find("?")) != str.npos) {
+        str.replace(index, 1, "(.{3,3})"); //#TODO中文在utf8下的正则表达式
+    }
+    while ((index = str.find("*")) != str.npos) {
+        str.replace(index, 1, "(.{0,})");
+    }
+    return str;
+}
+
+string searchByStuId(string str) {
+    string pattern = toRegex(str);
     regex patten_re(pattern);
     auto iter = students.begin();   //iterator遍历学生寻找与正则表达式匹配的学号
     string out_str;
@@ -828,7 +845,7 @@ string searchByStuId(string pattern) {
     return out_str;
 }
 
-int fuzzySearch() {
+int fuzzySearchById() {
     string input;
     cout << "Input: " << endl;
     cin >> input;
@@ -836,33 +853,231 @@ int fuzzySearch() {
     cout << result << endl;
 }
 
-int analysis() {}
+//归并并排序食堂窗口日志, 返回指针
+vector<OpeLog *> mergeLogs(Window* windows) {
+    priority_queue<OpeLog *, vector<OpeLog *>, comp_time> pq;
+    OpeLog* ptr[100];
+    vector<OpeLog *> result;
+    for(int i = 1; i < 100; i++) {
+        ptr[i] = windows[i].rear->next;
+        if(windows[i].rear != NULL) {
+            while(ptr[i] != windows[i].rear) { //ptr未遍历完整个窗口日志
+                if(ptr[i]->type == EMPTY) {
+                    ptr[i] = ptr[i]->next; //ptr为占位日志, 跳过
+                }
+                else {
+                    pq.push(ptr[i]); //将该窗口第一个非占位日志push进pq
+                    ptr[i] = ptr[i]->next;
+                    break;
+                }
+            }
+//            while(ptr[i]->type == EMPTY && ptr[i] != windows[i].rear) {
+//                ptr[i] = ptr[i]->next;  //ptr[i]置于类型不为EMPTY的日志头
+//            }
+//            if(ptr[i] != windows[i].rear) { //当logs全为empty时，不push进pq
+//                pq.push(ptr[i]);    //初始化优先队列，将每个窗口生成的第一个消费日志存储进pq
+//                ptr[i] = ptr[i]->next;
+//            }
+        }
+    }
+    while(!pq.empty()) {
+        int flag = 0;
+        OpeLog *temp = pq.top();
+        if(temp->type == EMPTY) {
+            printf("ABC");
+        }
+        pq.pop();
+        result.push_back(temp);
+        if(windows[temp->result].rear->next != ptr[temp->result]) { //windows中仍有剩余log
+            while(ptr[temp->result]->type == EMPTY) { //ptr若指向占位日志
+                if(ptr[temp->result] == windows[temp->result].rear->next) {
+                    flag = 1; //若windows[i]中没有更多的pay日志，flag置为1
+                    break;
+                }
+                ptr[temp->result] = ptr[temp->result]->next;
+            }
+            if(flag == 0) { //检查ptr中是否还有待导入的日志
+                pq.push(ptr[temp->result]);
+                ptr[temp->result] = ptr[temp->result]->next;
+            }
+        }
+    }
+    return result;
+}
+
+vector <OpeLog *> fuzzySearchByMulti(string str, vector<OpeLog*> logs) {
+    string delimiter = "/";
+    size_t pos = 0;
+    string token[6];    /*token[0]:起始时间 token[1]:终止时间 token[2]：学号 token[3]：姓名
+                        token[4]:最小金额 token[5]:最大金额*/
+    vector<OpeLog*> result;
+    int i = 0;
+    char* ptr;
+    while ((pos = str.find(delimiter)) != std::string::npos) {
+        token[i++] = str.substr(0, pos);
+        str.erase(0, pos + delimiter.length());
+    }
+    token[i++] = str.substr(0, str.find('~'));
+    str.erase(0, str.find('~') + 1);
+    token[i] = str;
+    long startTime = strtol(token[0].c_str(), &ptr, 10);
+    long endTime = strtol(token[1].c_str(), &ptr, 10);
+    regex stuID_re(toRegex(token[2]));
+    regex name_re(toRegex_name(token[3]));
+    int minValue = strtol(token[4].c_str(), &ptr, 10);
+    int maxValue = strtol(token[5].c_str(), &ptr, 10);
+    for(int j = 0; j < logs.size(); j++) {
+        if(startTime == 0 || logs[j]->time >= startTime) {
+            if(endTime == 0 || logs[j]->time <= endTime) {
+                if(regex_match(to_string(logs[j]->studentNum), stuID_re)) {
+                    if(regex_match(logs[j]->name, name_re)) {
+                        if(minValue == 0 || logs[j]->value >= minValue) {
+                            if(maxValue == 0 || logs[j]->value <= maxValue) {
+                                result.push_back(logs[j]);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return result;
+}
+
+int analysis() {
+    vector<OpeLog *> logs = mergeLogs(windows);
+    string input;
+    cout << "输入起始时间，终止时间，学号，姓名，消费金额范围（用/隔开, 范围用~表示）: ";
+    getline(cin, input);
+    vector<OpeLog *> result = fuzzySearchByMulti(input, logs);
+    return OK;
+}
+
+void outputImportPart() {
+    int i;
+    printf("                                ╔════╗\n");
+    printf("                                ║信息导入║\n");
+    printf("                                ╚════╝\n\n");
+    printf("                            ※ 1.全部信息导入\n");
+    printf("                          2.上一级     3.退出系统\n");
+    printf("________________________________________________________________________________\n");
+    printf("请输入功能序号->");
+    cin >> i;
+    while(i > 3 || i < 1 ) {
+        cout << "输入功能序号错误, 请重新输入" << endl;
+        cin >> i;
+    }
+    switch (i) {
+        case 1:
+            if(importFlag == 0) {  //importFlag代表信息是否已被导入，导入后importFlag置于1
+                if(importOpenDisInfo() == OK && importOpeInfo() == OK && importPositionInfo() == OK && importPayInfo() == OK) {
+                    cout << "导入信息成功，按任意键回到主菜单" << endl;
+                    importFlag = 1;
+                    getchar();
+                    getchar();
+                    outputHome();
+                }
+                else {
+                    cout << "导入信息失败，请检查失败原因后重试，按任意键返回主菜单" << endl;
+                    getchar();
+                    getchar();
+                    outputHome();
+                }
+            }
+            else {
+                cout << "信息已导入，输入1重新导入，输入0返回主菜单" << endl;
+                int j;
+                cin >> j;
+                if(j == 1) {
+                    if(importOpenDisInfo() == OK && importOpeInfo() == OK && importPositionInfo() == OK && importPayInfo() == OK) {
+                        cout << "导入信息成功，按任意键回到主菜单" << endl;
+                        importFlag = 1;
+                        getchar();
+                        getchar();
+                        outputHome();
+                    }
+                    else {
+                        cout << "导入信息失败，请检查失败原因后重试，按任意键返回主菜单" << endl;
+                        getchar();
+                        getchar();
+                        outputHome();
+                    }
+                }
+                else {
+                    outputHome();
+                }
+            }
+            break;
+        case 2:
+            outputHome();
+            break;
+        case 3:
+            exit(0);
+        default:
+            break;
+    }
+}
+
+void outputHome() {
+    int i;
+    cout << "              [欢迎进入校园卡管理信息系统!]" << endl << endl;
+    cout << "              ※ 1.信息导入" << endl;
+    cout << "              ※ 2.信息查询" << endl;
+    cout << "              ※ 3.信息统计" << endl;
+    cout << "              ※ 4.退出系统" << endl;
+    cout << "________________________________________________________________________________" << endl;
+    cout << "请输入功能序号" << endl;
+    cin >> i;
+    while(i > 4 || i < 1 ) {
+        cout << "输入功能序号错误, 请重新输入" << endl;
+        cin >> i;
+    }
+    switch (i) {
+        case 1: outputImportPart();
+            break;
+//        case 2: outputSearchPart();
+//            break;
+//        case 3:outputAnalyPart();
+//            break;
+        case 4:
+            exit(1);
+            break;
+        default:
+            break;
+    }
+}
+
+void cliSys() {
+    outputHome();
+}
 
 int main()
 {
     // int abc = cardNumberFactory();
     // initCard(123, NORMAL, 100.12, EXPDATE, 8888);
-    long stuNum = 2020130027;
-    initStatus();
-    importOpenDisInfo();
-    importPositionInfo();
-    importOpeInfo();
-    importPayInfo();
-    vector<OpeLog *> result = mergesort(windowRec);
-    for(int i = 0; i < result.size(); i++) {
-        if(result[i] == NULL) {
-            printf("ERROR");
-        }
-    }
-    opeByResult(result);
-    fclose(logFile);
-//    while(1) {
-//        scanf("%ld", &stuNum);
-//        Student *stu = students.find(stuNum)->second;
-//        printf("%d", stu->rear->balance);
+//    long stuNum = 2020130027;
+//    initStatus();
+//    importOpenDisInfo();
+//    importPositionInfo();
+//    importOpeInfo();
+//    importPayInfo();
+//    vector<OpeLog *> result = mergesort(windowRec);
+//    for(int i = 0; i < result.size(); i++) {
+//        if(result[i] == NULL) {
+//            printf("ERROR");
+//        }
 //    }
-    fuzzySearch();
+//    opeByResult(result);
+//    fclose(logFile);
+////    while(1) {
+////        scanf("%ld", &stuNum);
+////        Student *stu = students.find(stuNum)->second;
+////        printf("%d", stu->rear->balance);
+////    }
+////    fuzzySearch();
+//    analysis();
 
+    cliSys();
 
     return 0;
 }
