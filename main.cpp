@@ -830,19 +830,21 @@ string toRegex_name(string str) {
     return str;
 }
 
-string searchByStuId(string str) {
+void searchByStuId(string str) {
     string pattern = toRegex(str);
     regex patten_re(pattern);
+    vector <Student *> result;
     auto iter = students.begin();   //iterator遍历学生寻找与正则表达式匹配的学号
     string out_str;
     while (iter != students.end()) {
         if (regex_match(to_string(iter->second->studentNum), patten_re)) {
-            out_str.append(to_string(iter->second->studentNum));
-            out_str.append(", ");
+            result.push_back(iter->second);
         }
         iter++;
     }
-    return out_str;
+    for(auto i : result) {
+        cout << "学号:" <<i->studentNum << "姓名:" << i->name << "卡号:" << i->rear->cardNum << endl;
+    }
 }
 
 int fuzzySearchById() {
@@ -945,7 +947,9 @@ vector <OpeLog *> fuzzySearchByMulti(string str, vector<OpeLog*> logs) {
 }
 
 int analysis() {
+    clock_t start = clock();
     vector<OpeLog *> logs = mergeLogs(windows);
+    cout << "merge_k time: " << (clock() - start) / (double)CLOCKS_PER_SEC << "s" << endl;
     string input;
     cout << "输入起始时间，终止时间，学号，姓名，消费金额范围（用/隔开, 范围用~表示）: ";
     getline(cin, input);
@@ -1018,6 +1022,29 @@ void outputImportPart() {
     }
 }
 
+void outputSearchPart() {
+    int i;
+    printf("                                ╔════╗\n");
+    printf("                                ║信息查询║\n");
+    printf("                                ╚════╝\n\n");
+    printf("                            ※ 1.查询学生信息\n");
+    printf("                            ※ 2.查询消费记录\n");
+    printf("                          2.上一级     3.退出系统\n");
+    printf("________________________________________________________________________________\n");
+    printf("请输入功能序号->");
+    cin >> i;
+    while(i > 4 || i < 1 ) {
+        cout << "输入功能序号错误, 请重新输入: " << endl;
+        cin >> i;
+    }
+    switch (i) {
+        case 1:
+            string stuNum;
+            cout << "请输入学号: " << endl;
+            cin >> stuNum;
+    }
+}
+
 void outputHome() {
     int i;
     cout << "              [欢迎进入校园卡管理信息系统!]" << endl << endl;
@@ -1029,14 +1056,14 @@ void outputHome() {
     cout << "请输入功能序号" << endl;
     cin >> i;
     while(i > 4 || i < 1 ) {
-        cout << "输入功能序号错误, 请重新输入" << endl;
+        cout << "输入功能序号错误, 请重新输入: " << endl;
         cin >> i;
     }
     switch (i) {
         case 1: outputImportPart();
             break;
-//        case 2: outputSearchPart();
-//            break;
+        case 2: outputSearchPart();
+            break;
 //        case 3:outputAnalyPart();
 //            break;
         case 4:
