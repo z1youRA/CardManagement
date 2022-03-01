@@ -12,6 +12,8 @@
 #include <vector>
 #include <queue>
 #include <math.h>
+#include <sys/time.h>
+
 
 #define DELETED 0 //销户
 #define NORMAL 1
@@ -20,9 +22,6 @@
 #define LOSS 2                 //挂失
 #define EXPDATE 20240715       //过期时间
 #define FIRSTCARDNUMBER 312346 //第一张卡卡号
-#define MAJORNUM 100
-#define STUDENTPERMAJOR 500
-#define STUDENTSNUM 50000 //学生上限
 #define OK 1
 #define FAILED 0
 #define OPENACC 0
@@ -69,8 +68,6 @@ typedef struct student
     Card *front;
     Card *rear;
     int status;
-    OpeLog *head;
-    OpeLog *tail;
 } Student;
 
 typedef struct window
