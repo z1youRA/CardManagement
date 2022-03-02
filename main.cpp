@@ -1,10 +1,10 @@
 #include <regex>
+#include <utility>
 #include "header.h"
 
 unordered_map<long, Student *> students;
 unordered_map<int, Card *> cards;
 vector<OpeLog *> windowRec[100];
-OpeLog *logs = NULL;
 int cardSum = 0;
 Window windows[100];
 FILE* logFile = fopen("/home/z1youra/CLionProjects/cardManagement/log/ope_log.txt", "w");
@@ -18,7 +18,7 @@ void initStatus()
     for (int i = 0; i < 100; i++)
     {
         windows[i].index = i;
-        windows[i].rear = NULL;
+        windows[i].rear = nullptr;
         windows[i].logQuantity = 0;
     }
 }
@@ -40,7 +40,7 @@ long generateTimeNow() {
     char* ptr;
     timeval curTime;
     long timeNow;
-    gettimeofday(&curTime, NULL);
+    gettimeofday(&curTime, nullptr);
     int milli = curTime.tv_usec / 10000;
 
     char buffer [80];
@@ -72,53 +72,52 @@ Student *initStu(char *name, long studentNum)
     Student *stu;
     int i = 0;
     stu = (Student *)malloc(sizeof(Student));
-    if (stu == NULL)
+    if (stu == nullptr)
     {
         printf("动态空间申请失败！\n");
         exit(1);
     }
-    for (i = 0; name[i] != '\0'; i++)
+    for (; name[i] != '\0'; i++)
     {
         stu->name[i] = name[i];
     }
     stu->name[i] = '\0';
     stu->studentNum = studentNum;
-    stu->front = NULL;
-    stu->rear = NULL;
+    stu->front = nullptr;
+    stu->rear = nullptr;
     stu->status = NORMAL;
     return stu;
 }
 
 //通过已知信息初始化卡片并返回指针
-Card *initCard(long studentNum, int status, float balance, int expDate, int pwd)
+Card *initCard(long studentNum, int status, float balance, int expDate, string pwd)
 {
     Card *card;
     card = (Card *)malloc(sizeof(Card));
-    if (card == NULL)
+    if (card == nullptr)
     {
         printf("动态空间申请失败!\n");
         exit(1);
     }
-    int abc = (int)(balance * 100);
     card->cardNum = cardNumberFactory();
-    card->balance = abc;
+    card->balance = balanceToInt(balance);
     card->expDate = expDate;
     card->status = status;
     card->studentNum = studentNum;
-    card->pwd = pwd;
-    card->next = NULL;
+    strcpy(card->pwd, pwd.c_str());
+    card->next = nullptr;
     cards[card->cardNum] = card; //将卡指针存入unordered_map
     return card;
 }
 
-//通过卡号查找对应卡并返回其指针，若查找失败返回NULL#TODOrewrite
+//通过卡号查找对应卡并返回其指针，若查找失败返回nullptr#TODOrewrite
 Card *getCard(int cardNum)
 {
     unordered_map<int, Card *>::iterator iter = cards.find(cardNum);
     if (cards.find(cardNum) == cards.end())
     {
         printf("未找到该卡号，查找失败！\n");
-        return NULL;
+        return nullptr;
     }
     pair<int, Card *> pr = *iter;
     return pr.second;
@@ -130,7 +129,7 @@ Student *getStudent(long studentNum)
     unordered_map<long, Student *>::iterator iter = students.find(studentNum);
     if (students.find(studentNum) == students.end())
     {
-        return NULL;
+        return nullptr;
     }
     pair<long, Student *> pr = *iter;
     return pr.second;
@@ -142,7 +141,7 @@ OpeLog *initOpeLog(int type, long studentNum, int cardNum, int result, int value
     OpeLog *opelog;
     Student *stu;
     opelog = (OpeLog *)malloc(sizeof(OpeLog));
-    if (opelog == NULL)
+    if (opelog == nullptr)
     {
         printf("动态空间申请失败!\n");
         exit(1);
@@ -159,7 +158,7 @@ OpeLog *initOpeLog(int type, long studentNum, int cardNum, int result, int value
         return opelog;
     }
     stu = getStudent(studentNum);
-    if(stu == NULL) {
+    if(stu == nullptr) {
         printf("ERROR\n\n\n");
         exit(1);
     }
@@ -221,6 +220,7 @@ int saveOpeLogToFile(Student *stu, int type, int result, int value, long time, c
     char* log = generateLog(stu, type, result, value, time, message);
     fprintf(logFile, "%s\n", log);
     free(log);
+    return OK;
 }
 
 //手动开户操作
@@ -229,7 +229,7 @@ int openAccount(char *name, long studentNum)
     Student *temp;
     Student *target = getStudent(studentNum); //学生在学生数组中的位置指针
     //#TODO 检查输入学号年份和专业是否存在
-    if (target != NULL)
+    if (target != nullptr)
     {
         printf("ERROR: 该学号已开户！\n");
         exit(1);
@@ -238,7 +238,7 @@ int openAccount(char *name, long studentNum)
     // *target = *temp;
     students[studentNum] = temp; //将生成的学生指针存入unordered_map
     saveOpeLogToFile(temp, OPENACC, OK, 0, 0, "OK");
-//    if (temp->head == NULL)
+//    if (temp->head == nullptr)
 //    {
 //        temp->head = initOpeLog(OPENACC, studentNum, 0, OK, 0, 0); //生成循环链表存储日志 #TODO日志从中间位置存储
 //        temp->tail = temp->head;
@@ -257,12 +257,12 @@ int openCard(long studentNum)
     Student *stu = getStudent(studentNum);
     if (stu->status == NORMAL)
     {
-        Card *card = initCard(studentNum, NORMAL, 0, EXPDATE, 8888); //默认密码8888
-        if (stu->rear == NULL)
+        Card *card = initCard(studentNum, NORMAL, 0, EXPDATE, "8888"); //默认密码8888
+        if (stu->rear == nullptr)
         { //该学生卡片数量为0
             stu->front = card;
             stu->rear = card;
-            card->next = NULL;
+            card->next = nullptr;
             saveOpeLogToFile(stu, OPENCARD, OK, 0, 0, "开卡成功");
         }
         else if (stu->rear->status == LOSS)
@@ -272,7 +272,7 @@ int openCard(long studentNum)
             card->balance = stu->rear->balance; //将上张卡余额转入本张卡， 上张卡balance清零
             stu->rear->balance = 0;
             stu->rear = card;
-            card->next = NULL;
+            card->next = nullptr;
             saveOpeLogToFile(stu, OPENCARD, OK, 0, 0, "开卡成功");
         }
         else if (stu->rear->status == BANNED)
@@ -303,7 +303,7 @@ int topupBalance(long studentNum, float topupAmout)
     int temp = balanceToInt(topupAmout);
     if (stu->status == NORMAL)
     {
-        if (stu->rear == NULL)
+        if (stu->rear == nullptr)
         {
             printf("该学生无卡，请先开卡！\n");
             saveOpeLogToFile(stu, TOPUP, FAILED, topupAmout, 0, "该学生无卡");
@@ -349,7 +349,7 @@ int reportLoss(long studentNum)
     Student *stu = getStudent(studentNum);
     if (stu->status == NORMAL)
     {
-        if (stu->rear == NULL)
+        if (stu->rear == nullptr)
         {
             saveOpeLogToFile(stu, REPOLOSS, FAILED, 0, 0, "该学生无卡");
 //            printf("该学生无卡，请先开卡！\n");
@@ -382,7 +382,7 @@ int cancelLoss(long studentNum)
     Student *stu = getStudent(studentNum);
     if (stu->status == NORMAL)
     {
-        if (stu->rear == NULL)
+        if (stu->rear == nullptr)
         {
             saveOpeLogToFile(stu, CANCELLOSS, FAILED, 0, 0, "该学生无卡");
 //            printf("该学生无卡，请先开卡！\n");
@@ -413,7 +413,7 @@ int cancelLoss(long studentNum)
 int deleteAccount(long studentNum)
 {
     Student *stu = getStudent(studentNum);
-    if (stu == NULL)
+    if (stu == nullptr)
     {
         printf("学号: %ld\n该学生不存在， 注销失败！\n", studentNum);
         return FAILED;
@@ -433,15 +433,18 @@ int deleteAccount(long studentNum)
     }
 }
 
+//void resetAmountThisDuration() {
+//    for(auto i : students) {
+//        i.second->amoutThisDuration = 0;
+//    }
+//}
+
 //食堂支付
 int pay(int cardNum, float payAmount)
 {
     Card *card = getCard(cardNum);
     Student *stu = getStudent(card->studentNum);
     int payInt = balanceToInt(payAmount);
-//    if(stu->studentNum == 2020281202) {
-//        saveOpeLogToFile(stu, PAY, OK, payAmount, 0, "imp");
-//    }
     if (stu->status == NORMAL)
     { //学生账户状态正常
         if (card->status == NORMAL)
@@ -449,14 +452,14 @@ int pay(int cardNum, float payAmount)
             if (card->balance - payInt >= 0)
             { //卡中余额充足
                 card->balance -= payInt;
-                // printf("支付成功！\n");
+                 printf("支付成功！\n");
 //                saveOpeLogToFile(stu, PAY, OK, payAmount, 0);
                 return OK;
             }
             else
             {
                 balanceNotEnough++;
-//                printf("卡中余额不足，支付失败!\n");
+            printf("卡中余额不足，支付失败!\n");
 //                saveOpeLogToFile(stu, PAY, FAILED, payAmount, 0);
                 return FAILED;
             }
@@ -464,7 +467,7 @@ int pay(int cardNum, float payAmount)
         else
         {
             cardBanned++;
-//            printf("卡已挂失或禁用，支付失败！\n");
+        printf("卡已挂失或禁用，支付失败！\n");
 //            saveOpeLogToFile(stu, PAY, FAILED, payAmount, 0);
             return FAILED;
         }
@@ -472,7 +475,7 @@ int pay(int cardNum, float payAmount)
     else
     {
         accountNotExisted++;
-//        printf("卡号对应学生账户不存在或已注销，支付失败!\n");
+        printf("卡号对应学生账户不存在或已注销，支付失败!\n");
 //        saveOpeLogToFile(stu, PAY, FAILED, payAmount, 0);
         return FAILED;
     }
@@ -482,7 +485,7 @@ int pay(int cardNum, float payAmount)
 int initWindow(int index, int position)
 {
     OpeLog *log = initOpeLog(EMPTY, -1, 0, index, 0, TIMENOW);
-    if (windows[index].rear == NULL)
+    if (windows[index].rear == nullptr)
     { // 窗口日志为空， 生成一个初始日志
         windows[index].rear = log;
         log->next = log;
@@ -499,15 +502,41 @@ int initWindow(int index, int position)
     return OK;
 }
 
+int getHourFromTime(long time) {
+    return time / 1000000 % 100;
+}
+
+int getMinsFromTime(long time) {
+    return time / 10000 % 100;
+}
+
+bool isSamePeriod(long time1, long time2) {
+    if(time1 / 100000000 == time2 / 100000000){
+        int hour1 = getHourFromTime(time1);
+        int hour2 = getHourFromTime(time2);
+        if(hour1 < 10 && hour1 > 6) {
+            if(hour2 < 10 && hour2 > 6) {
+                return true;
+            }
+        }
+        else if(hour1 > 10 && hour1 < 14) {
+            if(hour2 > 10 && hour2 < 14) {
+                return true;
+            }
+        }
+        else if(hour1 > 16 && hour1 <20) {
+            if(hour2 > 16 && hour2 < 20) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 //模拟在窗口出消费，输入窗口序号，卡号，支付金额，时间戳
-int payAtWindow(int index, int cardNum, float payAmount, long time)
+int payAtWindow(int index, int cardNum, float payAmount, long time) //默认密码为8888
 {
     Card *card = getCard(cardNum);
-    if (card == NULL)
-    {
-        printf("卡号: %d不存在， 支付失败！\n", cardNum);
-        return FAILED;
-    }
     OpeLog *temp = initOpeLog(PAY, getCard(cardNum)->studentNum, cardNum, index, payAmount * 100, time);
     if (pay(cardNum, payAmount) == OK)  //支付成功， 将日志存入对应窗口的循环链表
     {
@@ -540,15 +569,54 @@ int payAtWindow(int index, int cardNum, float payAmount, long time)
     }
 }
 
+int payCheckPwd(int index, int cardNum, float payAmount, long time, int flag = 0) {
+    Card *card = getCard(cardNum);
+    if (card == nullptr)
+    {
+        printf("卡号: %d不存在， 支付失败！\n", cardNum);
+        return FAILED;
+    }
+    Student *stu = getStudent(card->studentNum);
+//    if(stu->lastConsump == 0) { //上次消费记录不存在，说明为第一次消费
+//        stu->lastConsump = time;
+//        stu->amountThisPeriod = balanceToInt(payAmount);
+//    }
+    if(isSamePeriod(stu->lastConsump, time)) {
+        stu->lastConsump = time;
+        stu->amountThisPeriod += balanceToInt(payAmount);
+    }
+    else if(!isSamePeriod(stu->lastConsump, time)) {
+        stu->lastConsump = time;
+        stu->amountThisPeriod = balanceToInt(payAmount);
+    }
+    if(stu->amountThisPeriod > 2000) {
+        if(flag == 0) { //flag为0,默认输入密码8888,用于批量操作
+            payAtWindow(index, cardNum, payAmount, time);
+        }
+        else {
+            string password;
+            cout << "当前时段支付金额大于20元，请输入密码:";
+            cin >> password;
+            if(password == card->pwd) {
+                payAtWindow(index, cardNum, payAmount, time);
+                stu->amountThisPeriod = 0;
+            }
+            else {
+                cout << "密码输入错误，支付取消\n";
+            }
+        }
+    }
+}
+
 //从文件中读入信息，进行批量开户操作
-int importOpenDisInfo()
+int importOpenAccInfo()
 {
     FILE *file = fopen("/home/z1youra/repos/C/StudentCardSystem/testFile/kh001.txt", "r"); //#TODO change to relative path
-    char *num = NULL;
-    char *name = NULL;
+    char *num = nullptr;
+    char *name = nullptr;
     char *ptr;
     long numLong = 0;
-    if (file == NULL)
+    if (file == nullptr)
     {
         printf("ERROR: 文件路径有误！\n");
         return FAILED;
@@ -561,7 +629,7 @@ int importOpenDisInfo()
             while (fgets(str, 30, file))
             { //逐行读入信息
                 num = strtok(str, ",");
-                name = strtok(NULL, ";");        //从str中拆分出学号和姓名两部分
+                name = strtok(nullptr, ";");        //从str中拆分出学号和姓名两部分
                 numLong = strtol(num, &ptr, 10); // str转换为long形式，便于存储
                 openAccount(name, numLong);
                 openCard(numLong); // #TODO开户开卡应在函数外
@@ -581,12 +649,12 @@ int importPositionInfo()
 {
     FILE *file = fopen("/home/z1youra/repos/C/StudentCardSystem/testFile/wz003.txt", "r");
 
-    char *index = NULL;
-    char *position = NULL;
+    char *index = nullptr;
+    char *position = nullptr;
     int i;
     int p;
     char str[30];
-    if (file == NULL)
+    if (file == nullptr)
     {
         printf("ERROR: 文件路径有误！");
         return FAILED;
@@ -598,7 +666,7 @@ int importPositionInfo()
             while (fgets(str, 30, file))
             {
                 index = strtok(str, ",");
-                position = strtok(NULL, ";");
+                position = strtok(nullptr, ";");
                 i = atoi(index);
                 p = atoi(position);
                 initWindow(i, p);
@@ -617,13 +685,13 @@ int importOpeInfo()
 {
     FILE *opeFile = fopen("/home/z1youra/repos/C/StudentCardSystem/testFile/cz002.txt", "r");
     char opeStr[50];
-    char *ope = NULL;
+    char *ope = nullptr;
     char *ptr;
     long stuNum;
     int type;
     long time;
     int value = 0; //充值金额
-    if (opeFile == NULL)
+    if (opeFile == nullptr)
     {
         printf("ERROR: 文件路径有误！");
         return FAILED;
@@ -636,7 +704,7 @@ int importOpeInfo()
             while (fgets(opeStr, 50, opeFile))
             {
                 time = strtol(strtok(opeStr, ","), &ptr, 10); //时间戳转为long存储
-                ope = strtok(NULL, ",");
+                ope = strtok(nullptr, ",");
             if (!strcmp(ope, "挂失"))
                     type = REPOLOSS;
                 else if (!strcmp(ope, "解挂"))
@@ -648,15 +716,15 @@ int importOpeInfo()
                 else if (!strcmp(ope, "充值"))
                 {
                     type = TOPUP;
-                    stuNum = strtol((strtok(NULL, ",")), &ptr, 10);
-                    value = balanceToInt(strtof(strtok(NULL, ";"), NULL)); //将读入的str转为float再转为int存储
+                    stuNum = strtol((strtok(nullptr, ",")), &ptr, 10);
+                    value = balanceToInt(strtof(strtok(nullptr, ";"), nullptr)); //将读入的str转为float再转为int存储
                     Student *stu = getStudent(stuNum);
-                    if (stu == NULL)
+                    if (stu == nullptr)
                     {
                         printf("ERROR: 学生未开户，请先进行开户后充值\n");
                         return FAILED;
                     }
-                    if (stu->rear == NULL)
+                    if (stu->rear == nullptr)
                     {
                         printf("ERROR: 学生未开卡，请先开卡后充值\n");
                         return FAILED;
@@ -668,7 +736,7 @@ int importOpeInfo()
                 }
                 else
                     printf("ERROR: 数据读取有误!\n");
-                stuNum = strtol((strtok(NULL, ";")), &ptr, 10);
+                stuNum = strtol((strtok(nullptr, ";")), &ptr, 10);
                 OpeLog *log = initOpeLog(type, stuNum, 0, 0, value, time);
                 windowRec[0].push_back(log);
             }
@@ -685,7 +753,7 @@ int importPayInfo()
 {
     FILE *payFile = fopen("/home/z1youra/repos/C/StudentCardSystem/testFile/xf014.txt", "r");
     char payStr[50];
-    OpeLog *log = NULL;
+    OpeLog *log = nullptr;
     char *ptr, *p;
     int cardNum;
     char *time1;
@@ -693,7 +761,7 @@ int importPayInfo()
     int windowIndex;
     long time;
     int value;
-    if (payFile == NULL)
+    if (payFile == nullptr)
     {
         printf("ERROR: 文件路径有误！");
         return FAILED;
@@ -718,17 +786,15 @@ int importPayInfo()
                 else
                 {
                     cardNum = atoi(strtok(payStr, ","));
-                    time1 = strtok(NULL, ",");
-                    time2 = strtok(NULL, ",");
+                    time1 = strtok(nullptr, ",");
+                    time2 = strtok(nullptr, ",");
 
                     char *_time = (char *) malloc(100);
                     memset(_time, 0, 100);
                     strcat(_time, time1);
                     strcat(_time, time2);
                     time = strtol(_time, &ptr, 10);
-//                    strcat(time1, time2);
-//                    time = strtol(time1, &ptr, 10);
-                    value = balanceToInt(stof(strtok(NULL, ";")));
+                    value = balanceToInt(stof(strtok(nullptr, ";")));
                     log = initOpeLog(PAY, -1, cardNum, windowIndex, value, time); // result存储windowIndex便于调用pay函数
                     windowRec[windowIndex].push_back(log);
                 }
@@ -759,7 +825,7 @@ vector<OpeLog *> mergesort(vector<OpeLog *> *array)
     {
         OpeLog *tmp = pq.top();
         pq.pop();
-        result.push_back(tmp);
+        result.push_back(tmp); //#TODO maybe change to queue to increase speed
         array[tmp->result].erase(array[tmp->result].begin());
         if (array[tmp->result].size() > 0)
         {
@@ -793,11 +859,13 @@ int executeOpe(OpeLog *ope)
             topupBalance(ope->studentNum, (float)(ope->value) / 100);
             break;
         case PAY:
-            payAtWindow(ope->result, ope->cardNum, (float)(ope->value) / 100, ope->time);
+            payCheckPwd(ope->result, ope->cardNum, (float)(ope->value) / 100, ope->time); //flag置为0,表示为批量操作，默认输入密码8888
+//            payAtWindow(ope->result, ope->cardNum, (float)(ope->value) / 100, ope->time, "8888");
             break;
         default:
             break;
     }
+    return OK;
 }
 
 //根据归并排序后的操作顺序逐个执行操作, 传入result和当前时间
@@ -864,10 +932,12 @@ void searchByStuId(string str) {
     else {
         for (auto i: result) {
             int cardNum = 0;
+            float balance = 0;
             if(i->rear) {
                 cardNum = i->rear->cardNum;
+                balance = (float)i->rear->balance / 100;
             }
-            cout << "学号:" << i->studentNum << "姓名:" << i->name << "卡号:" << cardNum << endl;
+            cout << "学号:" << i->studentNum << "姓名:" << i->name << "卡号:" << cardNum << "余额:" << balance << endl;
         }
     }
     pressAnyKey();
@@ -880,7 +950,7 @@ vector<OpeLog *> mergeLogs(Window* windows) {
     vector<OpeLog *> result;
     for(int i = 1; i < 100; i++) {
         ptr[i] = windows[i].rear->next;
-        if(windows[i].rear != NULL) {
+        if(windows[i].rear != nullptr) {
             while(ptr[i] != windows[i].rear) { //ptr未遍历完整个窗口日志
                 if(ptr[i]->type == EMPTY) {
                     ptr[i] = ptr[i]->next; //ptr为占位日志, 跳过
@@ -896,9 +966,6 @@ vector<OpeLog *> mergeLogs(Window* windows) {
     while(!pq.empty()) {
         int flag = 0;
         OpeLog *temp = pq.top();
-        if(temp->type == EMPTY) {
-            printf("ABC");
-        }
         pq.pop();
         result.push_back(temp);
         if(windows[temp->result].rear->next != ptr[temp->result]) { //windows中仍有剩余log
@@ -938,7 +1005,7 @@ vector <OpeLog *> fuzzySearchByMulti(string str, vector<OpeLog*> logs) {
     regex stuID_re(toRegex(token[2]));
     regex name_re(toRegex_name(token[3]));
     int minValue = strtol(token[4].c_str(), &ptr, 10);
-    int maxValue = strtol(token[5].c_str(), &ptr, 10);
+    int maxValue = strtol(token[5].c_str(), &ptr, 10) * 100;
     for(int j = 0; j < logs.size(); j++) {
         if(startTime == 0 || logs[j]->time >= startTime) {
             if(endTime == 0 || logs[j]->time <= endTime) {
@@ -959,12 +1026,12 @@ vector <OpeLog *> fuzzySearchByMulti(string str, vector<OpeLog*> logs) {
 
 void outputSearchResult(vector<OpeLog*> result) {
     for(auto i : result) {
-        printf("时间: %ld 学号: %ld 卡号: %d 消费金额: %.2f 余额: %.2f\n", i->time, i->studentNum, i->cardNum, (float)i->value,
+        printf("时间: %ld 姓名: %s 学号: %ld 卡号: %d 消费金额: %.2f 余额: %.2f\n", i->time, i->name, i->studentNum, i->cardNum, (float)i->value,
                (float)getStudent(i->studentNum)->rear->balance / 100);
     }
 }
 
-int analysis() {
+int searchInLogs() {
     clock_t start = clock();
     vector<OpeLog *> logs = mergeLogs(windows);
     cout << "归并消费日志所花费时间" << (clock() - start) / (double)CLOCKS_PER_SEC << "s" << endl;
@@ -990,6 +1057,62 @@ void deleteExistInfo() {
     cardBanned = 0;
 }
 
+bool isNearTime(long time1, long time2) {
+    if(time1 / 100000000 == time2 / 100000000){ //判断年份月份日期相同
+        int hour1 = getHourFromTime(time1);
+        int hour2 = getHourFromTime(time2);
+        int min1 = getMinsFromTime(time1);
+        int min2 = getMinsFromTime(time2);
+        if(hour1 == hour2) {
+            if(min1 - min2 >= -10 && min1 - min2 <= 10) {
+                return true;
+            }
+        }
+        else if(hour1 == hour2 + 1) {
+            if(min2 - min1 >= 50) {
+                return true;
+            }
+        }
+        else if(hour2 == hour1 + 1) {
+            if(min1 - min2 >= 55) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+//寻找指定学生的朋友，并返回存储他朋友的vector #TODO更改参数以产生更好的结果
+vector <Student *> findFriends(long stuNum) {
+    unordered_map<long, int> temp;
+    vector <Student *> friends;
+    string input = "//";
+    input += to_string(stuNum);
+    input += "/*/0~999";
+    vector<OpeLog *>logs = mergeLogs(windows);
+    vector<OpeLog *>stuLogs = fuzzySearchByMulti(input, logs);
+    for(auto log : stuLogs) {
+        for(int j = log->result - 5; j < log->result + 5; j++) {
+            if(j < 1 || j > 99 || !windows[j].rear) {
+                continue;
+            }
+            OpeLog * ptr = windows[j].rear->next;
+            do {
+                if(isNearTime(ptr->time, log->time)) {
+                    temp[ptr->studentNum]++;
+                }
+                ptr = ptr->next;
+            }while(ptr != windows[j].rear->next);
+        }
+    }
+    for(auto i : temp) {
+        if(i.second > 4) {
+            friends.push_back(getStudent(i.first));
+        }
+    }
+    return friends;
+}
+
 void outputImportPart() {
     int i;
     printf("                                ╔════╗\n");
@@ -1008,7 +1131,7 @@ void outputImportPart() {
     switch (i) {
         case 1:
             if(importFlag == 0) {  //importFlag代表信息是否已被导入，导入后importFlag置于1
-                if(importOpenDisInfo() == OK && importOpeInfo() == OK && importPositionInfo() == OK && importPayInfo() == OK) {
+                if(importOpenAccInfo() == OK && importOpeInfo() == OK && importPositionInfo() == OK && importPayInfo() == OK) {
                     vector<OpeLog *> result = mergesort(windowRec);
                     opeByResult(result);
                     cout << "导入信息成功，";
@@ -1026,7 +1149,7 @@ void outputImportPart() {
                 cin >> j;
                 if(j == 1) {
                     deleteExistInfo();
-                    if(importOpenDisInfo() == OK && importOpeInfo() == OK && importPositionInfo() == OK && importPayInfo() == OK) {
+                    if(importOpenAccInfo() == OK && importOpeInfo() == OK && importPositionInfo() == OK && importPayInfo() == OK) {
                         vector<OpeLog *> result = mergesort(windowRec);
                         opeByResult(result);
                         cout << "导入信息成功，";
@@ -1106,16 +1229,25 @@ void outputImportPart() {
                 }
                 case PAY:
                 {
-                    long cardNum;
+                    int cardNum;
+                    int index;
+                    float value;
+                    string password;
+                    long time = generateTimeNow();
                     cout << "请输入卡号:";
                     cin >> cardNum;
-                    int index;
                     cout << "请输入消费窗口序号(1-99):";
                     cin >> index;
-                    float value;
                     cout << "请输入消费金额:";
                     cin >> value;
-                    payAtWindow(index, cardNum, (float)value / 100, generateTimeNow());
+                    Card* card = getCard(cardNum);
+                    while(card == nullptr) {
+                        cout << "卡号不存在，请重新输入卡号:";
+                        cin >> cardNum;
+                        card = getCard(cardNum);
+                    }
+                        payCheckPwd(index, cardNum, (float)value, time, 1);
+//                        payAtWindow(index, cardNum, (float)value / 100, time);
                     break;
                 }
                 case 7:
@@ -1124,8 +1256,6 @@ void outputImportPart() {
                     break;
             }
         }
-
-
         case 3:
             outputHome();
             break;
@@ -1159,6 +1289,12 @@ int analyWindowInfo(long date, int index) {
     return OK;
 }
 
+void outputStudents(vector<Student*> result) {
+    for(auto i : result) {
+        printf("学号: %ld 姓名: %s", i->studentNum, i->name);
+    }
+}
+
 void outputSearchPart() {
     int i;
     string stuNum;
@@ -1168,11 +1304,12 @@ void outputSearchPart() {
     printf("                            ※ 1.查询学生信息\n");
     printf("                            ※ 2.查询消费记录\n");
     printf("                            ※ 3.查询窗口交易次数/金额\n");
-    printf("                          4.上一级     5.退出系统\n");
+    printf("                            ※ 4.查询学生的朋友\n");
+    printf("                          5.上一级     6.退出系统\n");
     printf("________________________________________________________________________________\n");
     printf("请输入功能序号->");
     cin >> i;
-    while(i > 4 || i < 1 ) {
+    while(i > 6 || i < 1 ) {
         cout << "输入功能序号错误, 请重新输入: " << endl;
         cin >> i;
     }
@@ -1191,11 +1328,11 @@ void outputSearchPart() {
                     outputHome();
                 }
                 else {
-                    analysis();
+                    searchInLogs();
                 }
             }
             else {
-                analysis();
+                searchInLogs();
             }
             break;
         case 3: {
@@ -1208,25 +1345,21 @@ void outputSearchPart() {
             analyWindowInfo(date, index);
             pressAnyKey();
         }
-        case 4:
+        case 4:{
+            long studentNum;
+            cout << "请输入学号: \n";
+            cin >> studentNum;
+            vector<Student *>result = findFriends(studentNum);
+            outputStudents(result);
+        }
+        case 5:
             outputHome();
             break;
-        case 5:
+        case 6:
             exit(1);
     }
 }
 
-//void outputAnalyPart() {
-//    printf("                                ╔════╗\n");
-//    printf("                                ║信息汇总║\n");
-//    printf("                                ╚════╝\n\n");
-//    printf("                            ※ 1.查询\n");
-//    printf("                            ※ 2.查询消费记录\n");
-//    printf("                          3.上一级     4.退出系统\n");
-//    printf("________________________________________________________________________________\n");
-//    printf("请输入功能序号->");
-//    cin >> i;
-//}
 void outputHome() {
     int i;
     cout << "              [欢迎进入校园卡管理信息系统!]" << endl << endl;
@@ -1265,28 +1398,29 @@ int main()
     // int abc = cardNumberFactory();
     // initCard(123, NORMAL, 100.12, EXPDATE, 8888);
 //    long stuNum = 2020130027;
-//    initStatus();
-//    importOpenDisInfo();
+    initStatus();
+//    importOpenAccInfo();
 //    importPositionInfo();
 //    importOpeInfo();
 //    importPayInfo();
 //    vector<OpeLog *> result = mergesort(windowRec);
 //    for(int i = 0; i < result.size(); i++) {
-//        if(result[i] == NULL) {
+//        if(result[i] == nullptr) {
 //            printf("ERROR");
 //        }
 //    }
 //    opeByResult(result);
-//    fclose(logFile);
+    
 ////    while(1) {
 ////        scanf("%ld", &stuNum);
 ////        Student *stu = students.find(stuNum)->second;
 ////        printf("%d", stu->rear->balance);
 ////    }
 ////    fuzzySearch();
-//    analysis();
+//    searchInLogs();
 
     cliSys();
+    fclose(logFile);
 
     return 0;
 }

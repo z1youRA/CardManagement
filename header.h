@@ -43,9 +43,8 @@ typedef struct card
     int status;
     int balance;
     int expDate;
-    int pwd;
+    char pwd[16];
     struct card *next; //指向该学生的下一张卡
-    struct card *down; //指向卡号递增的下一张卡
     //#TODO类似十字链表，在窗口和卡片处均存储log
 } Card;
 
@@ -68,6 +67,12 @@ typedef struct student
     Card *front;
     Card *rear;
     int status;
+    long lastConsump;
+    int amountThisPeriod;
+    student() {
+        this->lastConsump = 0;
+        this->amountThisPeriod = 0;
+    }
 } Student;
 
 typedef struct window
