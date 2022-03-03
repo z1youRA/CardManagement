@@ -13,7 +13,10 @@
 #include <queue>
 #include <math.h>
 #include <sys/time.h>
-
+#include <regex>
+#include <utility>
+#include <fstream>
+#include <iomanip>
 
 #define DELETED 0 //销户
 #define NORMAL 1
@@ -57,6 +60,7 @@ typedef struct opelog
     int result; //操作结果
     int value;  //金额
     long time;
+    int validation;
     struct opelog *next;
 } OpeLog;
 
@@ -94,3 +98,7 @@ struct comp_time
 #endif //CARDMANAGEMENT_HEADER_H
 
 void outputHome();
+void outputImportPart();
+void outputSearchPart();
+void pressAnyKey();
+void searchByStuId(string str);
